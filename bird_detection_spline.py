@@ -62,7 +62,7 @@ class spline_BULBUL:
 		self.predict  = theano.function([x],output_test)
                 self.train    = theano.function([x,y,learning_rate],loss,updates=updates)
                 self.test     = theano.function([x,y],accu)
-		self.get_filters = theano.function([],layers[2].get_filters())
+		self.get_filters = lambda:layers[2].get_filters()
 		self.get_repr    = theano.function([x],lasagne.layers.get_output(layers[4]))
 
 class conv_BULBUL:
