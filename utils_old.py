@@ -37,7 +37,7 @@ class theano_lagrange:
                         aa          = ones(S) 
                         aa[::2]    -= 2
                         thetas_real = aa*hanning(S)
-                        thetas_imag = roll(thetas_real,1)
+                        thetas_imag = roll(aa,1)*hanning(S)
                         c           = zeros(1)
                 elif(initialization=='random'):
                         thetas_real = randn(S)
@@ -142,8 +142,8 @@ class theano_hermite_complex:
                 if(initialization=='gabor'):
                         aa          = ones(S)
                         aa[::2]    -= 2
-                        thetas_real = aa*hanning(S)
-                        thetas_imag = roll(thetas_real,1)
+                        thetas_real = aa*hanning(S)**2
+                        thetas_imag = roll(aa,1)*hanning(S)**2
                         gammas_real = zeros(S)
                         gammas_imag = zeros(S)
                         c           = zeros(1)
@@ -157,10 +157,10 @@ class theano_hermite_complex:
                         else:
                                 c   = zeros(1)
                 elif(initialization=='random_apodized'):
-                        thetas_real = randn(S)*hanning(S)
-                        thetas_imag = randn(S)*hanning(S)
-                        gammas_real = randn(S)*hanning(S)
-                        gammas_imag = randn(S)*hanning(S)
+                        thetas_real = randn(S)*hanning(S)**2
+                        thetas_imag = randn(S)*hanning(S)**2
+                        gammas_real = randn(S)*hanning(S)**2
+                        gammas_imag = randn(S)*hanning(S)**2
                         if(chirplet):
                                 c   = randn(1)
                         else:

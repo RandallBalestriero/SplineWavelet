@@ -3,7 +3,7 @@ import theano
 import lasagne
 from utils_old import *
 from theano.tensor.shared_randomstreams import RandomStreams
-
+from pylab import *
 
 
 class RomainLayer(lasagne.layers.Layer):
@@ -156,10 +156,8 @@ class GABOR_BULBUL:
                 layers        = [lasagne.layers.InputLayer(x_shape,x)]
                 layers.append(lasagne.layers.ReshapeLayer(layers[-1],(x_shape[0],1,x_shape[1])))
                 filter_size = int(N*2**J)
-                A = SplineFilter1D(layers[-1],N=int(N),J=int(J),Q=int(Q),S=int(S),type_='hermite',stride=1,pad='valid',nonlinearity=1,deterministic=0,initialization='gabor',renormalization=lambda x:x,chirplet=0,complex_=1)
-                print 'aaaaa',A.get_filters()[0]
-                print type(A.get_filters()[0])
-                layers.append(lasagne.layers.Conv1DLayer(layers[-1],num_filters=J*Q+1,filter_size=int(N*2**((J*Q+1.0)/Q)),W=A.get_filters()[0].get_value(),nonlinearity=theano.tensor.abs_))
+                A = SplineFilter1D(layers[-1],N=int(N),J=int(J),Q=int(Q),S=int(S),type_='hermite',stride=1,pad='valid',nonlinearity=1,deterministic=0,initialization='gabor',renormalization=lambda x:x.norm(2),chirplet=0,complex_=1)
+                layers.append(lasagne.layers.Conv1DLayer(layers[-1],num_filters=J*Q+1,filter_size=int(N*2**J),W=A.get_filters()[0],nonlinearity=theano.tensor.abs_))
                 shape = lasagne.layers.get_output_shape(layers[-1])
                 layers.append(lasagne.layers.ReshapeLayer(layers[-1],(shape[0],1,shape[1],shape[2])))
                 layers.append(lasagne.layers.Pool2DLayer(layers[-1],stride=(1,2**9),pool_size=(1,1024),mode='average_inc_pad'))
