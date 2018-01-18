@@ -74,11 +74,13 @@ class conv_BULBUL:
                 layers.append(lasagne.layers.ReshapeLayer(layers[-1],(x_shape[0],1,x_shape[1])))
                 filter_size = int(N*2**J)
 		layers.append(lasagne.layers.Conv1DLayer(layers[-1],num_filters=J*Q+1,filter_size=int(N*2**((J*Q+1.0)/Q)),nonlinearity=theano.tensor.abs_))
+                shape = lasagne.layers.get_output_shape(layers[-1])
+                layers.append(lasagne.layers.ReshapeLayer(layers[-1],(shape[0],1,shape[1],shape[2])))
                 layers.append(lasagne.layers.Pool2DLayer(layers[-1],stride=(1,2**9),pool_size=(1,1024),mode='average_inc_pad'))
 		if log_:
 	                layers.append(lasagne.layers.NonlinearityLayer(layers[-1],nonlinearity=lambda x: theano.tensor.log(x+0.00001)))
                 shape = lasagne.layers.get_output_shape(layers[-1])
-                layers.append(lasagne.layers.BatchNormLayer(lasagne.layers.ReshapeLayer(layers[-1],(shape[0],1,shape[1],shape[2])),axes=[0,1,3]))
+                layers.append(lasagne.layers.BatchNormLayer(layers[-1],axes=[0,1,3]))
 		if aug:
                 	layers.append(RomainLayer(layers[-1]))
                 layers.append(lasagne.layers.batch_norm(lasagne.layers.Conv2DLayer(layers[-1],num_filters=16,filter_size=(3,3),nonlinearity=lasagne.nonlinearities.leaky_rectify)))
@@ -154,10 +156,10 @@ class GABOR_BULBUL:
                 layers        = [lasagne.layers.InputLayer(x_shape,x)]
                 layers.append(lasagne.layers.ReshapeLayer(layers[-1],(x_shape[0],1,x_shape[1])))
                 filter_size = int(N*2**J)
-                A = SplineFilter1D(layers[-1],N=int(N),J=int(J),Q=int(Q),S=int(S),type_='hermite',stride=1,pad='valid',nonlinearity=1,deterministic=deterministic,initialization='gabor',renormalization=renormalization,chirplet=0,complex_=1)
+                A = SplineFilter1D(layers[-1],N=int(N),J=int(J),Q=int(Q),S=int(S),type_='hermite',stride=1,pad='valid',nonlinearity=1,deterministic=0,initialization='gabor',renormalization=lambda x:x,chirplet=0,complex_=1)
                 print 'aaaaa',A.get_filters()[0]
                 print type(A.get_filters()[0])
-                layers.append(lasagne.layers.Conv1DLayer(layers[-1],num_filters=J*Q+1,filter_size=int(N*2**((J*Q+1.0)/Q)),W=A.get_filters()[0],nonlinearity=theano.tensor.abs_))
+                layers.append(lasagne.layers.Conv1DLayer(layers[-1],num_filters=J*Q+1,filter_size=int(N*2**((J*Q+1.0)/Q)),W=A.get_filters()[0].get_value(),nonlinearity=theano.tensor.abs_))
                 shape = lasagne.layers.get_output_shape(layers[-1])
                 layers.append(lasagne.layers.ReshapeLayer(layers[-1],(shape[0],1,shape[1],shape[2])))
                 layers.append(lasagne.layers.Pool2DLayer(layers[-1],stride=(1,2**9),pool_size=(1,1024),mode='average_inc_pad'))
@@ -192,5 +194,5 @@ class GABOR_BULBUL:
                 self.get_repr    = theano.function([x],lasagne.layers.get_output(layers[4]))
 
 
-                                                                                   112,0-1       64%
+
 

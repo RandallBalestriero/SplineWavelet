@@ -262,6 +262,7 @@ class SplineFilter1D(lasagne.layers.Layer):
        		        real_filter_bank_,imag_filter_bank_,T= create_filter_banks_complex(self.filter_class,N,J,Q)
        		        self.real_filter_bank      = theano.tensor.cast(real_filter_bank_.reshape((J*Q+1,1,T)),'float32')
        		        self.imag_filter_bank      = theano.tensor.cast(imag_filter_bank_.reshape((J*Q+1,1,T)),'float32')
+			self.get_filters           = theano.function([],[self.real_filter_bank,self.real_filter_bank])
        	       		self.real_layer            = lasagne.layers.Conv1DLayer(self.input_shape,num_filters=int(J*Q+1),filter_size=int(T),W=self.real_filter_bank,stride=int(stride),pad=pad,nonlinearity=None,b=None)
                		self.imag_layer            = lasagne.layers.Conv1DLayer(self.input_shape,num_filters=int(J*Q+1),filter_size=int(T),W=self.imag_filter_bank,stride=int(stride),pad=pad,nonlinearity=None,b=None)
 		#	filters,Ts = create_filter_banks_complex(self.filter_class,N,J,Q)
@@ -274,6 +275,7 @@ class SplineFilter1D(lasagne.layers.Layer):
                         self.filter_class  	   = theano_hermite_real(S,deterministic=deterministic,renormalization=renormalization,initialization=initialization,chirplet=chirplet)
                         real_filter_bank_,T	   = create_filter_banks_real(self.filter_class,N,J,Q)
                         self.real_filter_bank      = theano.tensor.cast(real_filter_bank_.reshape((J*Q+1,1,T)),'float32')
+                        self.get_filters           = theano.function([],[self.real_filter_bank])
                         self.real_layer            = lasagne.layers.Conv1DLayer(self.input_shape,num_filters=int(J*Q+1),filter_size=int(T),W=self.real_filter_bank,stride=int(stride),pad=int(pad),nonlinearity=None,b=None)
 
 
@@ -305,11 +307,6 @@ class SplineFilter1D(lasagne.layers.Layer):
                       k= [self.filter_class.thetas_real,self.filter_class.gammas_real,self.filter_class.c]
                       if(self.chirplet): return k
                       else: return k[:-1]
-        def get_filters(self):
-		if(self.complex):
-	                return [self.real_filter_bank,self.imag_filter_bank]
-		else:
-			return [self.real_filter_bank]
 
 
 def mad(x):
