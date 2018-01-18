@@ -183,8 +183,8 @@ class theano_hermite_complex:
 		real_filter     = self.interp((t-ti[:-1])/(ti[1:]-ti[:-1]),thetas_real[:-1],gammas_real[:-1],thetas_real[1:],gammas_real[1:]).sum(0)
                 imag_filter     = self.interp((t-ti[:-1])/(ti[1:]-ti[:-1]),thetas_imag[:-1],gammas_imag[:-1],thetas_imag[1:],gammas_imag[1:]).sum(0)
 		# RENORMALIZE
-                real_filter     = (real_filter)/(self.renormalization(real_filter)+0.001)
-                imag_filter     = (imag_filter)/(self.renormalization(imag_filter)+0.001)
+                real_filter     = (real_filter)/(self.renormalization(real_filter)+0.0001)
+                imag_filter     = (imag_filter)/(self.renormalization(imag_filter)+0.0001)
 		#APPLY CHIRPLET
 		if(self.chirplet):
 			TT              = self.c.repeat(T)*float32(3.14159)*th_linspace(0,1,T)**2

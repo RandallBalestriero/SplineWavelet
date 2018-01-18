@@ -73,14 +73,14 @@ class conv_BULBUL:
                 layers        = [lasagne.layers.InputLayer(x_shape,x)]
                 layers.append(lasagne.layers.ReshapeLayer(layers[-1],(x_shape[0],1,x_shape[1])))
                 filter_size = int(N*2**J)
-		layers.append(lasagne.layers.Conv1DLayer(layers[-1],num_filters=J*Q+1,filter_size=N*2**J,nonlinearity=theano.tensor.abs_))
+		layers.append(lasagne.layers.Conv1DLayer(layers[-1],num_filters=J*Q+1,filter_size=int(N*2**((J*Q+1.0)/Q)),nonlinearity=theano.tensor.abs_))
+                layers.append(lasagne.layers.Pool2DLayer(layers[-1],stride=(1,2**9),pool_size=(1,1024),mode='average_inc_pad'))
 		if log_:
-	                layers.append(lasagne.layers.NonlinearityLayer(layers[-1],nonlinearity=lambda x: theano.tensor.log(x+0.000001)))
+	                layers.append(lasagne.layers.NonlinearityLayer(layers[-1],nonlinearity=lambda x: theano.tensor.log(x+0.00001)))
                 shape = lasagne.layers.get_output_shape(layers[-1])
-                layers.append(lasagne.layers.NonlinearityLayer(lasagne.layers.BatchNormLayer(lasagne.layers.ReshapeLayer(layers[-1],(shape[0],1,shape[1],shape[2])),axes=[0,1,3]),nonlinearity=lasagne.nonlinearities.leaky_rectify))
+                layers.append(lasagne.layers.BatchNormLayer(lasagne.layers.ReshapeLayer(layers[-1],(shape[0],1,shape[1],shape[2])),axes=[0,1,3]))
 		if aug:
                 	layers.append(RomainLayer(layers[-1]))
-                layers.append(lasagne.layers.Pool2DLayer(layers[-1],stride=(1,2**9),pool_size=(1,1024),mode='average_inc_pad'))
                 layers.append(lasagne.layers.batch_norm(lasagne.layers.Conv2DLayer(layers[-1],num_filters=16,filter_size=(3,3),nonlinearity=lasagne.nonlinearities.leaky_rectify)))
                 layers.append(lasagne.layers.Pool2DLayer(layers[-1],(3,3)))
                 layers.append(lasagne.layers.batch_norm(lasagne.layers.Conv2DLayer(layers[-1],num_filters=16,filter_size=(3,3),nonlinearity=lasagne.nonlinearities.leaky_rectify)))
@@ -104,7 +104,7 @@ class conv_BULBUL:
                 self.train    = theano.function([x,y,learning_rate],loss,updates=updates)
                 self.test     = theano.function([x,y],accu)
                 self.get_filters = theano.function([],layers[2].W)
-                self.get_repr    = theano.function([x],lasagne.layers.get_output(layers[2]))
+                self.get_repr    = theano.function([x],lasagne.layers.get_output(layers[3]))
 
 
 
@@ -115,7 +115,7 @@ class BULBUL:
 		self.aug      = aug 
                 layers        = [lasagne.layers.InputLayer(x_shape,x)]
                 shape = lasagne.layers.get_output_shape(layers[-1])
-                layers.append(lasagne.layers.NonlinearityLayer(lasagne.layers.BatchNormLayer(lasagne.layers.ReshapeLayer(layers[-1],(shape[0],1,shape[1],shape[2])),axes=[0,1,3]),nonlinearity=lasagne.nonlinearities.leaky_rectify))
+                layers.append(lasagne.layers.BatchNormLayer(lasagne.layers.ReshapeLayer(layers[-1],(shape[0],1,shape[1],shape[2])),axes=[0,1,3]))
                 if aug:
 			layers.append(RomainLayer(layers[-1]))
                 layers.append(lasagne.layers.batch_norm(lasagne.layers.Conv2DLayer(layers[-1],num_filters=16,filter_size=(3,3),nonlinearity=lasagne.nonlinearities.leaky_rectify)))
@@ -143,4 +143,54 @@ class BULBUL:
                 self.get_filters = lambda :[]
                 self.get_repr    = lambda x:x
 
+
+
+
+class GABOR_BULBUL:
+        def __init__(self,x_shape,S,N,J,Q,aug=1,log_=1):
+                x             = theano.tensor.fmatrix('x')
+                y             = theano.tensor.ivector('y')
+                self.aug      = aug
+                layers        = [lasagne.layers.InputLayer(x_shape,x)]
+                layers.append(lasagne.layers.ReshapeLayer(layers[-1],(x_shape[0],1,x_shape[1])))
+                filter_size = int(N*2**J)
+                A = SplineFilter1D(layers[-1],N=int(N),J=int(J),Q=int(Q),S=int(S),type_='hermite',stride=1,pad='valid',nonlinearity=1,deterministic=deterministic,initialization='gabor',renormalization=renormalization,chirplet=0,complex_=1)
+                print 'aaaaa',A.get_filters()[0]
+                print type(A.get_filters()[0])
+                layers.append(lasagne.layers.Conv1DLayer(layers[-1],num_filters=J*Q+1,filter_size=int(N*2**((J*Q+1.0)/Q)),W=A.get_filters()[0],nonlinearity=theano.tensor.abs_))
+                shape = lasagne.layers.get_output_shape(layers[-1])
+                layers.append(lasagne.layers.ReshapeLayer(layers[-1],(shape[0],1,shape[1],shape[2])))
+                layers.append(lasagne.layers.Pool2DLayer(layers[-1],stride=(1,2**9),pool_size=(1,1024),mode='average_inc_pad'))
+                if log_:
+                        layers.append(lasagne.layers.NonlinearityLayer(layers[-1],nonlinearity=lambda x: theano.tensor.log(x+0.00001)))
+                layers.append(lasagne.layers.BatchNormLayer(layers[-1],axes=[0,1,3]))
+                if aug:
+                        layers.append(RomainLayer(layers[-1]))
+                layers.append(lasagne.layers.batch_norm(lasagne.layers.Conv2DLayer(layers[-1],num_filters=16,filter_size=(3,3),nonlinearity=lasagne.nonlinearities.leaky_rectify)))
+                layers.append(lasagne.layers.Pool2DLayer(layers[-1],(3,3)))
+                layers.append(lasagne.layers.batch_norm(lasagne.layers.Conv2DLayer(layers[-1],num_filters=16,filter_size=(3,3),nonlinearity=lasagne.nonlinearities.leaky_rectify)))
+                layers.append(lasagne.layers.Pool2DLayer(layers[-1],(3,3)))
+                layers.append(lasagne.layers.batch_norm(lasagne.layers.Conv2DLayer(layers[-1],num_filters=16,filter_size=(1,3),nonlinearity=lasagne.nonlinearities.leaky_rectify)))
+                layers.append(lasagne.layers.Pool2DLayer(layers[-1],(1,3)))
+                layers.append(lasagne.layers.DropoutLayer(lasagne.layers.batch_norm(lasagne.layers.Conv2DLayer(layers[-1],num_filters=16,filter_size=(1,3),nonlinearity=lasagne.nonlinearities.leaky_rectify))))
+                layers.append(lasagne.layers.Pool2DLayer(layers[-1],(1,3)))
+                layers.append(lasagne.layers.DropoutLayer(lasagne.layers.batch_norm(lasagne.layers.DenseLayer(layers[-1],256,nonlinearity=lasagne.nonlinearities.leaky_rectify))))
+                layers.append(lasagne.layers.DropoutLayer(lasagne.layers.batch_norm(lasagne.layers.DenseLayer(layers[-1],32,nonlinearity=lasagne.nonlinearities.leaky_rectify))))
+                layers.append(lasagne.layers.DenseLayer(layers[-1],1,nonlinearity=lasagne.nonlinearities.sigmoid))
+                output = lasagne.layers.get_output(layers[-1])
+                output_test = lasagne.layers.get_output(layers[-1],deterministic=True)
+                loss = lasagne.objectives.binary_crossentropy(output,y).mean()
+                accu = lasagne.objectives.binary_accuracy(output_test,y).mean()
+                print("NUMBER OF PARAMS",lasagne.layers.count_params(layers[-1]))
+                params        = lasagne.layers.get_all_params(layers[-1],trainable=True)
+                learning_rate = theano.tensor.scalar()
+                updates       = lasagne.updates.adam(loss,params,learning_rate)
+                self.predict  = theano.function([x],output_test)
+                self.train    = theano.function([x,y,learning_rate],loss,updates=updates)
+                self.test     = theano.function([x,y],accu)
+                self.get_filters = theano.function([],layers[2].W)
+                self.get_repr    = theano.function([x],lasagne.layers.get_output(layers[4]))
+
+
+                                                                                   112,0-1       64%
 

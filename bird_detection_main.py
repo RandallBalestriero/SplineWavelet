@@ -19,12 +19,6 @@ def trainit(X_train,Y_train,X_test,Y_test,batch_size,n_epochs,MODEL,index_0,inde
         representation = [[],[]]
 	accuracy           = []
         for n_epoch in xrange(n_epochs):
-                if n_epoch == 75:
-                        l_r = l_r/5.
-                elif n_epoch == 150:
-                        l_r = l_r /5.
-                elif n_epoch ==350:
-                        l_r = l_r/5.
                 if(n_epoch<10 or n_epoch==(n_epochs-1)):
                         filters.append(MODEL.get_filters())
                 for batch in xrange(n_batch):
@@ -77,14 +71,14 @@ label_csv   = csv.reader(csv_file)
 data_list   = vstack(list(label_csv))
 names_wav   = data_list[1:,0]
 labels      = data_list[1:,1]
-complex_    = 1#int(sys.argv[-1])# '0 1'
+complex_    = 1# '0 1'
 init_       = sys.argv[-1] # 'random' 'apodized_random' 'gabor'
-chirp        = int(sys.argv[-2])# '0 1'
-MODEL_      = sys.argv[-3] # 'BULBUL CONV SPLINE'
+chirp       = int(sys.argv[-2])# '0 1'
+MODEL_      = sys.argv[-3] # 'BULBUL CONV SPLINE GABOR'
 l_r_        = float32(sys.argv[-4])
 log_        = int(sys.argv[-5])
-batch_size_ = 10#int(sys.argv[-6])
-n_data_     = 7000#int(sys.argv[-7])
+batch_size_ = 10
+n_data_     = 7000
 names_wav   = names_wav[:n_data_]
 labels      = labels[:n_data_]
 DATA = []
@@ -92,10 +86,10 @@ aug_        = 0
 for i in xrange(n_data_):
 	data_files = sort(glob.glob('./wav/'+names_wav[i]+'.wav'))
         Fs,x 	   = read(data_files)
-	DATA.append(x[0::2])
+	x          = x[0:len(x)-len(x)%2]
+	DATA.append(x[0::2]+x[1::2])
 N,J,Q,S    = 16,5,16,16
-chirplet   = 1
-n_epochs   = 100
+n_epochs   = 150
 
 for i in xrange(10):
 	X_train,X_test,Y_train,Y_test 	= train_test_split(vstack(DATA),labels,test_size=0.33,stratify=labels,random_state=10+i)
@@ -113,7 +107,9 @@ for i in xrange(10):
 	        MODEL      = conv_BULBUL(x_shape=(batch_size_,shape(X_train)[1]),S=S,N=N,J=J,Q=Q,aug=aug_,log_=log_)
 	elif(MODEL_ == 'splineBULBUL'):
 	        MODEL      = spline_BULBUL(x_shape=(batch_size_,shape(X_train)[1]),S=S,N=N,J=J,Q=Q,deterministic=0,initialization=init_,renormalization=lambda x:x.norm(2),chirplet=chirp,aug=aug_,complex_=complex_,log_=log_)
-	name = 'freebird_'+MODEL_+str(i)+'_lr'+str(l_r_)+'_chirp'+str(chirp)+'_init'+init_+'_log'+str(log_)+'.pkl'
+        elif(MODEL_ == 'GABOR'):
+                MODEL      = GABOR_BULBUL(x_shape=(batch_size_,shape(X_train)[1]),S=S,N=N,J=J,Q=Q,aug=aug_,log_=log_)
+	name = 'cagedbird_'+MODEL_+str(i)+'_lr'+str(l_r_)+'_chirp'+str(chirp)+'_init'+init_+'_log'+str(log_)+'.pkl'
 	print name
 	train_size =  shape(X_train)[0]
 	Y_train = array(Y_train)
