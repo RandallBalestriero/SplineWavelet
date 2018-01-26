@@ -41,7 +41,7 @@ class theano_hermite_complex:
                         thetas_imag = roll(aa,1)*hanning(S)**2
                         gammas_real = zeros(S)
                         gammas_imag = zeros(S)
-                        c           = zeros(1)-1
+                        c           = zeros(1)
                 elif(initialization=='random'):
                         thetas_real = randn(S)
                         thetas_imag = randn(S)
@@ -69,8 +69,8 @@ class theano_hermite_complex:
 		# NOW CREATE THE POST PROCESSED VARIABLES
 		self.ti           = th_linspace(0,1,self.S).dimshuffle([0,'x'])# THIS REPRESENTS THE MESH
                 if(self.chirplet):
-                        TT          = self.c.repeat(S)*float32(2*3.14159)*th_linspace(0,1,S)**2
-			TTc         = self.c.repeat(S)*float32(2*3.14159)*th_linspace(0,1,S)
+                        TT          = theano.tensor.nnet.sigmoid(self.c).repeat(S)*float32(2*3.14159)*th_linspace(0,1,S)**2
+			TTc         = theano.tensor.nnet.sigmoid(self.c).repeat(S)*float32(2*3.14159)*th_linspace(0,1,S)
                         thetas_real = self.thetas_real*theano.tensor.cos(TT)-self.thetas_imag*theano.tensor.sin(TT)
                         thetas_imag = self.thetas_imag*theano.tensor.cos(TT)+self.thetas_real*theano.tensor.sin(TT)
 			gammas_real = self.gammas_real*theano.tensor.cos(TT)-self.gammas_imag*theano.tensor.sin(TT)-self.thetas_real*theano.tensor.sin(TT)*TTc-self.thetas_imag*theano.tensor.cos(TT)*TTc
@@ -203,9 +203,10 @@ class SplineFilter1D(lasagne.layers.Layer):
 		if(self.complex):
 			if(self.deterministic):
 				return []
-			k= [self.filter_class.thetas_real,self.filter_class.thetas_imag,self.filter_class.gammas_real,self.filter_class.gammas_imag,self.filter_class.c]
-			if(self.chirplet): return k
-			else: return k[:-1]
+			if(self.chirplet):
+				return [self.filter_class.thetas_real,self.filter_class.thetas_imag,self.filter_class.gammas_real,self.filter_class.gammas_imag,self.filter_class.c]
+			else: 
+				return [self.filter_class.thetas_real,self.filter_class.thetas_imag,self.filter_class.gammas_real,self.filter_class.gammas_imag]
 		else:
                       if(self.deterministic):
                               return []

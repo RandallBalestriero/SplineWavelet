@@ -27,7 +27,7 @@ def load_files(files):
 	test_auc = asarray(test_auc)
         test_accu = asarray(test_accu)
 	train_error = asarray(train_error)
-	return test_auc.mean(0),test_auc.std(0),test_accu.mean(0),test_accu.std(0),train_error.mean(0),train_error.std(0)
+	return test_auc.mean(0),test_auc.std(0),test_accu.mean(0),test_accu.std(0),train_error.mean(0),train_error.std(0),filters
 
 
 
@@ -62,9 +62,15 @@ def plot_it(path):
         do_the_plot(x500,data_splineBULBUL_random[2],data_splineBULBUL_random[3],'r')
         do_the_plot(x500,data_splineBULBUL_random_ap[2],data_splineBULBUL_random_ap[3],'m')
         suptitle('ACUUU')
-        show()
-
-
+	figure()
+	for i in xrange(5):
+		subplot(5,3,1+i*3)
+		plot(data_splineBULBUL_random_ap[-1][0][0][20+i,0],'b')
+                plot(data_splineBULBUL_random_ap[-1][0][1][20+i,0],'r')
+                subplot(5,3,2+i*3)
+                plot(data_CONV[-1][0][20+i,0],'b')
+                subplot(5,3,2+i*3)
+                plot(data_CONVGABOR[-1][0][20+i,0],'b')
 
 	show()	
 
