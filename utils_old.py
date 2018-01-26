@@ -92,8 +92,9 @@ class theano_hermite_complex:
 		real_filter     = self.interp((t-self.ti[:-1])/(self.ti[1:]-self.ti[:-1]),self.pthetas_real[:-1],self.pgammas_real[:-1],self.pthetas_real[1:],self.pgammas_real[1:]).sum(0)
                 imag_filter     = self.interp((t-self.ti[:-1])/(self.ti[1:]-self.ti[:-1]),self.pthetas_imag[:-1],self.pgammas_imag[:-1],self.pthetas_imag[1:],self.pgammas_imag[1:]).sum(0)
 		# RENORMALIZE
-                real_filter     = real_filter/(self.renormalization(real_filter)+0.0001)
-                imag_filter     = imag_filter/(self.renormalization(imag_filter)+0.0001)
+		K = self.renormalization(real_filter)+self.renormalization(imag_filter)
+                real_filter     = real_filter/(K+0.00001)
+                imag_filter     = imag_filter/(K+0.00001)
                 return real_filter,imag_filter
         def interp(self,t,pi,mi,pip,mip):
                 values = ((2*t**3-3*t**2+1)*pi+(t**3-2*t**2+t)*mi+(-2*t**3+3*t**2)*pip+(t**3-t**2)*mip)
