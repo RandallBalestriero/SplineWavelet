@@ -21,111 +21,6 @@ def th_linspace(start,end,n):
         return a+start
 
 
-
-class theano_lagrange:
-        def __init__(self,S,deterministic,initialization,renormalization):
-                """S: integer (the number of regions a.k.a piecewise polynomials)
-                deterministic: bool (True if hyper-parameters are learnable)
-                initialization: 'random','gabor','random_apodized' 
-                renormalization: fn(x):norm(x) (theano function for filter renormalization)"""
-                self.S               = S
-                self.renormalization = renormalization
-                self.deterministic   = deterministic
-                self.mask            = ones(S,dtype='float32') # MASK will be used to apply boundary conditions
-                self.mask[[0,-1]]    = 0 # boundary conditions correspond to 0 values on the boundaries
-                if(initialization=='gabor'):
-                        aa          = ones(S) 
-                        aa[::2]    -= 2
-                        thetas_real = aa*hanning(S)
-                        thetas_imag = roll(aa,1)*hanning(S)
-                        c           = zeros(1)
-                elif(initialization=='random'):
-                        thetas_real = randn(S)
-                        thetas_imag = randn(S)
-                        c           = randn(1)
-                elif(initialization=='random_apodized'):
-                        thetas_real = randn(S)*hanning(S)
-                        thetas_imag = randn(S)*hanning(S)
-                        c           = randn(1)
-                self.thetas_real  = theano.shared(thetas_real.astype('float32'))
-                self.thetas_imag  = theano.shared(thetas_imag.astype('float32'))
-                self.c            = theano.shared(c)
-        def get_real_filter(self,T):
-                """method to obtain one filter with length T"""
-                T               = theano.tensor.cast(T,'int32')
-                eps             = theano.tensor.cast(1.0/T,'float32')
-                f_t,updates     = theano.scan(fn = self.interp,non_sequences=[self.thetas_real*self.mask,th_linspace(0+eps,1-eps,theano.tensor.cast(theano.tensor.ceil(T/(self.S-1.0)),'float32')),T,self.S-1],sequences=[theano.tensor.arange(self.S-1,dtype='int32')],outputs_info=[theano.tensor.zeros((T,),dtype='float32')])
-                filter_         = f_t[-1]*theano.tensor.cos(self.c.repeat(T)*theano.tensor.cast(3.14159*th_linspace(0,1,T)**2,'float32'))
-                centered_filter = filter_-filter_.mean()
-                final_filter    = centered_filter/self.renormalization(centered_filter)
-                return final_filter
-        def get_imag_filter(self,T):
-                """method to obtain one filter with length T"""
-                T               = theano.tensor.cast(T,'int32')
-                eps             = theano.tensor.cast(1.0/T,'float32')
-                f_t,updates     = theano.scan(fn = self.interp,non_sequences=[self.thetas_imag*self.mask,th_linspace(0+eps,1-eps,theano.tensor.cast(theano.tensor.ceil(T/(self.S-1.0)),'float32')),T,self.S-1],sequences=[theano.tensor.arange(self.S-1,dtype='int32')],outputs_info=[theano.tensor.zeros((T,),dtype='float32')])
-                filter_         = f_t[-1]*theano.tensor.sin(self.c.repeat(T)*theano.tensor.cast(3.14159*th_linspace(0,1,T)**2,'float32'))
-                centered_filter = filter_-filter_.mean()
-                final_filter    = centered_filter/self.renormalization(centered_filter)
-                return final_filter
-        def interp(self,t,mi,pi,mip,pip):
-		values = ((2*t**3-3*t**2+1)*pi+(t**3-2*t**2+t)*mi+(-2*t**3+3*t**2)*pip+(t**3-t**2)*mip)
-		mask   = theano.tensor.cast(theano.tensor.ge(t,0),'float32')*theano.tensor.cast(theano.tensor.lt(t,1),'float32')
-		return values*mask
-
-
-class theano_hermite_real:
-        def __init__(self,S,deterministic,initialization,renormalization,chirplet=0):
-                """S: integer (the number of regions a.k.a piecewise polynomials)
-                deterministic: bool (True if hyper-parameters are learnable)
-                initialization: 'random','gabor','random_apodized' 
-                renormalization: fn(x):norm(x) (theano function for filter renormalization)"""
-                self.S               = S
-		self.chirplet        = chirplet
-                self.renormalization = renormalization
-                self.deterministic   = deterministic
-                T                    = theano.tensor.iscalar()# will be use to requiest a filter of length T
-                self.mask            = ones(S,dtype='float32') # MASK will be used to apply boundary conditions
-                self.mask[[0,-1]]    = 0 # boundary conditions correspond to 0 values on the boundaries
-                if(initialization=='gabor'):
-                        aa          = ones(S)
-                        aa[::2]    -= 2
-                        thetas_real = aa*hanning(S)
-                        gammas_real = zeros(S)
-                        c           = zeros(1)
-                elif(initialization=='random'):
-                        thetas_real = randn(S)
-                        gammas_real = randn(S)
-                        c           = randn(1)
-                elif(initialization=='random_apodized'):
-                        thetas_real = randn(S)*hanning(S)
-                        gammas_real = randn(S)*hanning(S)
-                        c           = randn(1)
-                self.c            = theano.shared(c.astype('float32'))
-                self.thetas_real  = theano.shared(thetas_real.astype('float32'))
-                self.gammas_real  = theano.shared(gammas_real.astype('float32'))
-        def get_filters(self,T):
-                """method to obtain one filter with length T"""
-		ti              = th_linspace(0,1,self.S).dimshuffle([0,'x'])# THIS REPRESENTS THE MESH
-		t               = th_linspace(0,1,T).dimshuffle(['x',0])#THIS REPRESENTS THE CONTINOUS TIME
-		# APPLY CONSTRAINTS OF MEAN 0 AND BOUNDARY CONDITIONS
-		thetas_real     = ((self.thetas_real-self.thetas_real[1:-1].mean())*self.mask).dimshuffle([0,'x'])
-		gammas_real     = (self.gammas_real*self.mask).dimshuffle([0,'x'])
-		#COMPUTE FILTERS BASED ONACCUMULATION OF WINDOWED INTERPOLATION
-		real_filter     = self.interp((t-ti[:-1])/(ti[1:]-ti[:-1]),thetas_real[:-1],gammas_real[:-1],thetas_real[1:],gammas_real[1:]).sum(0)
-		# RENORMALIZE
-                real_filter     = (real_filter)/self.renormalization(real_filter)
-		#APPLY CHIRPLET
-		if(self.chirplet):
-			TT              = self.c.repeat(T)*float32(3.14159)*th_linspace(0,1,T)**2
-			real_filter     = real_filter*theano.tensor.cos(TT)
-                return real_filter
-        def interp(self,t,pi,mi,pip,mip):
-                values = ((2*t**3-3*t**2+1)*pi+(t**3-2*t**2+t)*mi+(-2*t**3+3*t**2)*pip+(t**3-t**2)*mip)
-                mask   = theano.tensor.cast(theano.tensor.ge(t,0),'float32')*theano.tensor.cast(theano.tensor.lt(t,1),'float32')
-                return values*mask
-
-
 class theano_hermite_complex:
         def __init__(self,S,deterministic,initialization,renormalization,chirplet=0):
                 """S: integer (the number of regions a.k.a piecewise polynomials)
@@ -146,7 +41,7 @@ class theano_hermite_complex:
                         thetas_imag = roll(aa,1)*hanning(S)**2
                         gammas_real = zeros(S)
                         gammas_imag = zeros(S)
-                        c           = zeros(1)
+                        c           = zeros(1)-1
                 elif(initialization=='random'):
                         thetas_real = randn(S)
                         thetas_imag = randn(S)
@@ -165,31 +60,40 @@ class theano_hermite_complex:
                                 c   = randn(1)
                         else:
                                 c   = zeros(1)
-                self.c            = theano.shared(c.astype('float32'))
+		if(chirplet):
+                	self.c            = theano.shared(c.astype('float32'))
                 self.thetas_real  = theano.shared(thetas_real.astype('float32'))
                 self.thetas_imag  = theano.shared(thetas_imag.astype('float32'))
                 self.gammas_real  = theano.shared(gammas_real.astype('float32'))
                 self.gammas_imag  = theano.shared(gammas_imag.astype('float32'))
+		# NOW CREATE THE POST PROCESSED VARIABLES
+		self.ti           = th_linspace(0,1,self.S).dimshuffle([0,'x'])# THIS REPRESENTS THE MESH
+                if(self.chirplet):
+                        TT          = self.c.repeat(S)*float32(2*3.14159)*th_linspace(0,1,S)**2
+			TTc         = self.c.repeat(S)*float32(2*3.14159)*th_linspace(0,1,S)
+                        thetas_real = self.thetas_real*theano.tensor.cos(TT)-self.thetas_imag*theano.tensor.sin(TT)
+                        thetas_imag = self.thetas_imag*theano.tensor.cos(TT)+self.thetas_real*theano.tensor.sin(TT)
+			gammas_real = self.gammas_real*theano.tensor.cos(TT)-self.gammas_imag*theano.tensor.sin(TT)-self.thetas_real*theano.tensor.sin(TT)*TTc-self.thetas_imag*theano.tensor.cos(TT)*TTc
+                        gammas_imag = self.gammas_imag*theano.tensor.cos(TT)+self.gammas_real*theano.tensor.sin(TT)+self.thetas_real*theano.tensor.cos(TT)*TTc-self.thetas_imag*theano.tensor.sin(TT)*TTc
+		else:
+			thetas_real = self.thetas_real
+			thetas_imag = self.thetas_imag
+			gammas_real = self.gammas_real
+			gamma_imag  = self.gammas_imag
+		#NOW APPLY BOUNDARY CONDITION
+                self.pthetas_real   = ((thetas_real-thetas_real[1:-1].mean())*self.mask).dimshuffle([0,'x'])
+                self.pthetas_imag   = ((thetas_imag-thetas_imag[1:-1].mean())*self.mask).dimshuffle([0,'x'])
+                self.pgammas_real   = (gammas_real*self.mask).dimshuffle([0,'x'])
+                self.pgammas_imag   = (gammas_imag*self.mask).dimshuffle([0,'x'])
         def get_filters(self,T):
                 """method to obtain one filter with length T"""
-		ti              = th_linspace(0,1,self.S).dimshuffle([0,'x'])# THIS REPRESENTS THE MESH
-		t               = th_linspace(0,1,T).dimshuffle(['x',0])#THIS REPRESENTS THE CONTINOUS TIME
-		# APPLY CONSTRAINTS OF MEAN 0 AND BOUNDARY CONDITIONS
-		thetas_real     = ((self.thetas_real-self.thetas_real[1:-1].mean())*self.mask).dimshuffle([0,'x'])
-                thetas_imag     = ((self.thetas_imag-self.thetas_imag[1:-1].mean())*self.mask).dimshuffle([0,'x'])
-		gammas_real     = (self.gammas_real*self.mask).dimshuffle([0,'x'])
-                gammas_imag     = (self.gammas_imag*self.mask).dimshuffle([0,'x'])
+		t               = th_linspace(0,1,T).dimshuffle(['x',0])#THIS REPRESENTS THE CONTINOUS TIME (sampled)
 		#COMPUTE FILTERS BASED ONACCUMULATION OF WINDOWED INTERPOLATION
-		real_filter     = self.interp((t-ti[:-1])/(ti[1:]-ti[:-1]),thetas_real[:-1],gammas_real[:-1],thetas_real[1:],gammas_real[1:]).sum(0)
-                imag_filter     = self.interp((t-ti[:-1])/(ti[1:]-ti[:-1]),thetas_imag[:-1],gammas_imag[:-1],thetas_imag[1:],gammas_imag[1:]).sum(0)
+		real_filter     = self.interp((t-self.ti[:-1])/(self.ti[1:]-self.ti[:-1]),self.pthetas_real[:-1],self.pgammas_real[:-1],self.pthetas_real[1:],self.pgammas_real[1:]).sum(0)
+                imag_filter     = self.interp((t-self.ti[:-1])/(self.ti[1:]-self.ti[:-1]),self.pthetas_imag[:-1],self.pgammas_imag[:-1],self.pthetas_imag[1:],self.pgammas_imag[1:]).sum(0)
 		# RENORMALIZE
-                real_filter     = (real_filter)/(self.renormalization(real_filter)+0.0001)
-                imag_filter     = (imag_filter)/(self.renormalization(imag_filter)+0.0001)
-		#APPLY CHIRPLET
-		if(self.chirplet):
-			TT              = self.c.repeat(T)*float32(3.14159)*th_linspace(0,1,T)**2
-			real_filter     = real_filter*theano.tensor.cos(TT)-imag_filter*theano.tensor.sin(TT)
-                	imag_filter     = real_filter*theano.tensor.sin(TT)+imag_filter*theano.tensor.cos(TT)
+                real_filter     = real_filter/(self.renormalization(real_filter)+0.0001)
+                imag_filter     = imag_filter/(self.renormalization(imag_filter)+0.0001)
                 return real_filter,imag_filter
         def interp(self,t,pi,mi,pip,mip):
                 values = ((2*t**3-3*t**2+1)*pi+(t**3-2*t**2+t)*mi+(-2*t**3+3*t**2)*pip+(t**3-t**2)*mip)

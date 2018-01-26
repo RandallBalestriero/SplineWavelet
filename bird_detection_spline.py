@@ -38,7 +38,7 @@ class spline_BULBUL:
 			layers.append(RomainLayer(layers[-1]))
                 layers.append(lasagne.layers.Pool2DLayer(layers[-1],stride=(1,2**9),pool_size=(1,1024),mode='average_inc_pad'))
                 if log_:
-                        layers.append(lasagne.layers.NonlinearityLayer(layers[-1],nonlinearity=lambda x: theano.tensor.log(x+0.00001)))
+                        layers.append(lasagne.layers.NonlinearityLayer(layers[-1],nonlinearity=lambda x: theano.tensor.log(x+0.001)))
                 layers.append(lasagne.layers.BatchNormLayer(layers[-1],axes=[0,1,3]))
                 layers.append(lasagne.layers.batch_norm(lasagne.layers.Conv2DLayer(layers[-1],num_filters=16,filter_size=(3,3),nonlinearity=lasagne.nonlinearities.leaky_rectify)))
                 layers.append(lasagne.layers.Pool2DLayer(layers[-1],(3,3)))
