@@ -41,25 +41,25 @@ class theano_hermite_complex:
                         thetas_imag = roll(aa,1)*hanning(S)**2
                         gammas_real = zeros(S)
                         gammas_imag = zeros(S)
-                        c           = zeros(1)
+                        c           = zeros(1)-1
                 elif(initialization=='random'):
                         thetas_real = randn(S)
                         thetas_imag = randn(S)
                         gammas_real = randn(S)
                         gammas_imag = randn(S)
                         if(chirplet):
-                                c   = randn(1)
+                                c   = randn(1)-1
                         else:
-                                c   = zeros(1)
+                                c   = zeros(1)-1
                 elif(initialization=='random_apodized'):
                         thetas_real = randn(S)*hanning(S)**2
                         thetas_imag = randn(S)*hanning(S)**2
                         gammas_real = randn(S)*hanning(S)**2
                         gammas_imag = randn(S)*hanning(S)**2
                         if(chirplet):
-                                c   = randn(1)
+                                c   = randn(1)-1
                         else:
-                                c   = zeros(1)
+                                c   = zeros(1)-1
 		if(chirplet):
                 	self.c            = theano.shared(c.astype('float32'))
                 self.thetas_real  = theano.shared(thetas_real.astype('float32'))
@@ -69,8 +69,8 @@ class theano_hermite_complex:
 		# NOW CREATE THE POST PROCESSED VARIABLES
 		self.ti           = th_linspace(0,1,self.S).dimshuffle([0,'x'])# THIS REPRESENTS THE MESH
                 if(self.chirplet):
-                        TT          = theano.tensor.nnet.sigmoid(self.c).repeat(S)*float32(2*3.14159)*th_linspace(0,1,S)**2
-			TTc         = theano.tensor.nnet.sigmoid(self.c).repeat(S)*float32(2*3.14159)*th_linspace(0,1,S)
+                        TT          = 3*theano.tensor.nnet.sigmoid(self.c).repeat(S)*float32(2*3.14159)*th_linspace(0,1,S)**2
+			TTc         = 3*theano.tensor.nnet.sigmoid(self.c).repeat(S)*float32(2*3.14159)*th_linspace(0,1,S)
                         thetas_real = self.thetas_real*theano.tensor.cos(TT)-self.thetas_imag*theano.tensor.sin(TT)
                         thetas_imag = self.thetas_imag*theano.tensor.cos(TT)+self.thetas_real*theano.tensor.sin(TT)
 			gammas_real = self.gammas_real*theano.tensor.cos(TT)-self.gammas_imag*theano.tensor.sin(TT)-self.thetas_real*theano.tensor.sin(TT)*TTc-self.thetas_imag*theano.tensor.cos(TT)*TTc
@@ -92,9 +92,9 @@ class theano_hermite_complex:
 		real_filter     = self.interp((t-self.ti[:-1])/(self.ti[1:]-self.ti[:-1]),self.pthetas_real[:-1],self.pgammas_real[:-1],self.pthetas_real[1:],self.pgammas_real[1:]).sum(0)
                 imag_filter     = self.interp((t-self.ti[:-1])/(self.ti[1:]-self.ti[:-1]),self.pthetas_imag[:-1],self.pgammas_imag[:-1],self.pthetas_imag[1:],self.pgammas_imag[1:]).sum(0)
 		# RENORMALIZE
-		K = self.renormalization(real_filter)+self.renormalization(imag_filter)
-                real_filter     = real_filter/(K+0.00001)
-                imag_filter     = imag_filter/(K+0.00001)
+#		K = self.renormalization(real_filter)+self.renormalization(imag_filter)
+#                real_filter     = real_filter/(K+0.00001)
+#                imag_filter     = imag_filter/(K+0.00001)
                 return real_filter,imag_filter
         def interp(self,t,pi,mi,pip,mip):
                 values = ((2*t**3-3*t**2+1)*pi+(t**3-2*t**2+t)*mi+(-2*t**3+3*t**2)*pip+(t**3-t**2)*mip)
