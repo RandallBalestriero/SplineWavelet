@@ -48,24 +48,18 @@ init_      ='random_apodized'
 
 
 
-for i,j in zip(DATA_TRAIN,names):
+for i,j,k in zip(DATA_TRAIN,names,DATA_TEST):
 	MODEL      = SCALO(x_shape=(1,len(i)),S=S,N=N,J=J,Q=Q,initialization=init_,renormalization=lambda x:x.norm(2),chirplet=chirp,complex_=complex_,log_=log_)
 	error      = trainit(i.reshape((1,-1)),n_epochs,MODEL,l_r_)
-	filtersr,filtersi = MODEL.get_filters()#[:,:,0,:]
-	repren     = MODEL.get_repr(i.reshape((1,-1)))[0]
-	savetxt('trainlogscalo_'+j[:-3]+'csv',repren,delimiter=',')
-        savetxt('trainrealfilters_'+j[:-3]+'csv',filtersr[:,0,:],delimiter=',')
-        savetxt('trainimagfilters_'+j[:-3]+'csv',filtersi[:,0,:],delimiter=',')
+	FILTERS_TRAIN.append(MODEL.get_filters())
+        MODEL      = SCALO(x_shape=(1,len(k)),S=S,N=N,J=J,Q=Q,initialization=init_,renormalization=lambda x:x.norm(2),chirplet=chirp,complex_=complex_,log_=log_)
+        error      = trainit(k.reshape((1,-1)),n_epochs,MODEL,l_r_)
+        FILTERS_TEST.append(MODEL.get_filters())
 
 
-for i,j in zip(DATA_TEST,names):
-        MODEL      = SCALO(x_shape=(1,len(i)),S=S,N=N,J=J,Q=Q,initialization=init_,renormalization=lambda x:x.norm(2),chirplet=chirp,complex_=complex_,log_=log_)
-        error      = trainit(i.reshape((1,-1)),n_epochs,MODEL,l_r_)
-        filtersr,filtersi = MODEL.get_filters()#[:,:,0,:]
-        repren     = MODEL.get_repr(i.reshape((1,-1)))[0]
-        savetxt('testlogscalo_'+j[:-3]+'csv',repren,delimiter=',')
-        savetxt('testrealfilters_'+j[:-3]+'csv',filtersr[:,0,:],delimiter=',')
-        savetxt('testimagfilters_'+j[:-3]+'csv',filtersi[:,0,:],delimiter=',')
+f=open('data_bird_saved.pkl','wb')
+cPickle.dump([FILTERS_TRAIN,FILTERS_TEST,DATA_TRAIN,DATA_TEST],f) 
+f.close()  
 
 
 
