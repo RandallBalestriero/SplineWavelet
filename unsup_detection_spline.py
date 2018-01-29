@@ -26,5 +26,5 @@ class SCALO:
 		learning_rate = theano.tensor.scalar()
                 updates       = lasagne.updates.adam(loss,params,learning_rate)
                 self.train    = theano.function([x,learning_rate],loss,updates=updates)
-		self.get_filters = theano.function([],layers[2].get_filters())
+		self.get_filters = lambda :layers[2].get_filters()
 		self.get_repr    = theano.function([x],lasagne.layers.get_output(layers[2]))

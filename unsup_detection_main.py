@@ -1,4 +1,4 @@
-from bird_detection_spline import *
+from unsup_detection_spline import *
 from pylab import *
 from scipy.io.wavfile import read
 import csv
@@ -17,7 +17,7 @@ def trainit(X_train,n_epochs,MODEL,l_r):
 	return train_error
 
 classes= sort(glob.glob('./bird/train_*'))
-classes =[c for c in classes if "sturnus_vulgaris" in c or "sylvia_atricapilla" in c or "troglodytes_troglodytes" in c or "turdus_merula" in c or "turdus_philomelos" in c or "turdus_viscivorus" in c]
+#classes =[c for c in classes if "sturnus_vulgaris" in c or "sylvia_atricapilla" in c or "troglodytes_troglodytes" in c or "turdus_merula" in c or "turdus_philomelos" in c or "turdus_viscivorus" in c]
 DATA = []
 names = []
 for c in classes:
@@ -26,35 +26,47 @@ for c in classes:
 	print data_files
         Fs,x 	   = read(data_files)
 	DATA.append((x[::2]+x[1::2]).astype('float32'))
-	DATA[-1]-=DATA[-1].mean()
-	DATA[-1]/=DATA[-1].max()
 	names.append(data_files.split("/")[-1])
 
-print DATA
-print names
+DATA_TRAIN = []
+DATA_TEST  = []
+FILTERS_TRAIN = []
+FILTERS_TEST  = []
+for d in DATA:
+	DATA_TRAIN.append(d[:len(d)/2])
+	DATA_TEST.append(d[len(d)/2:])
 
-N,J,Q,S    = 16,6,8,8
-chirp   = 1
+
+
+N,J,Q,S    = 16,6,8,16
+chirp      = 1
 n_epochs   = 300
-l_r_ = 0.1
-log_ = 1
-complex_ = 1
-init_='gabor'
+l_r_       = 0.1
+log_       = 1
+complex_   = 1
+init_      ='random_apodized'
 
-for i,j in zip(DATA,names):
+
+
+for i,j in zip(DATA_TRAIN,names):
 	MODEL      = SCALO(x_shape=(1,len(i)),S=S,N=N,J=J,Q=Q,initialization=init_,renormalization=lambda x:x.norm(2),chirplet=chirp,complex_=complex_,log_=log_)
 	error      = trainit(i.reshape((1,-1)),n_epochs,MODEL,l_r_)
-	filtersr,filtersi    = MODEL.get_filters()#[:,:,0,:]
+	filtersr,filtersi = MODEL.get_filters()#[:,:,0,:]
 	repren     = MODEL.get_repr(i.reshape((1,-1)))[0]
-	print repren.shape
-#	subplot(211)
-#	imshow(repren,aspect='auto')
-#	subplot(212)
-#	imshow(filtersr[:,0,:],aspect='auto')
-#	show()
-	savetxt('logscalo_'+j[:-3]+'csv',repren,delimiter=',')
-        savetxt('realfilters_'+j[:-3]+'csv',filtersr[:,0,:],delimiter=',')
-        savetxt('imagfilters_'+j[:-3]+'csv',filtersi[:,0,:],delimiter=',')
+	savetxt('trainlogscalo_'+j[:-3]+'csv',repren,delimiter=',')
+        savetxt('trainrealfilters_'+j[:-3]+'csv',filtersr[:,0,:],delimiter=',')
+        savetxt('trainimagfilters_'+j[:-3]+'csv',filtersi[:,0,:],delimiter=',')
+
+
+for i,j in zip(DATA_TEST,names):
+        MODEL      = SCALO(x_shape=(1,len(i)),S=S,N=N,J=J,Q=Q,initialization=init_,renormalization=lambda x:x.norm(2),chirplet=chirp,complex_=complex_,log_=log_)
+        error      = trainit(i.reshape((1,-1)),n_epochs,MODEL,l_r_)
+        filtersr,filtersi = MODEL.get_filters()#[:,:,0,:]
+        repren     = MODEL.get_repr(i.reshape((1,-1)))[0]
+        savetxt('testlogscalo_'+j[:-3]+'csv',repren,delimiter=',')
+        savetxt('testrealfilters_'+j[:-3]+'csv',filtersr[:,0,:],delimiter=',')
+        savetxt('testimagfilters_'+j[:-3]+'csv',filtersi[:,0,:],delimiter=',')
+
 
 
 
