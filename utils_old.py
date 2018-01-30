@@ -73,7 +73,7 @@ class theano_hermite_complex:
                         thetas_imag = self.thetas_imag
                         gammas_real = self.gammas_real
                         gammas_imag = self.gammas_imag
-			c = theano.tensor.clip(self.c,0,1)
+			c = self.c
                         TT          = c.repeat(S)*float32(2*3.14159)*(th_linspace(0,1,S)**2)
 			TTc         = c.repeat(S)*float32(2*3.14159)*th_linspace(0,1,S)
                         thetas_real = thetas_real*theano.tensor.cos(TT)-thetas_imag*theano.tensor.sin(TT)
