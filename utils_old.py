@@ -200,12 +200,7 @@ class SplineFilter1D(lasagne.layers.Layer):
 		if(self.complex):
         	        real_output = self.real_layer.get_output_for(input)
         	        imag_output = self.imag_layer.get_output_for(input)
-        	        return theano.tensor.sqrt(real_output**2+imag_output**2)
-			#real_outputs =[l.get_output_for(input)[:,:,int(floor((self.Ts[-1]-t)/2.)):-int(ceil((self.Ts[-1]-t)/2.))] for l,t in zip(self.layers_real,self.Ts)]
-                        #imag_outputs =[l.get_output_for(input)[:,:,int(floor((self.Ts[-1]-t)/2.)):-int(ceil((self.Ts[-1]-t)/2.))] for l,t in zip(self.layers_complex,self.Ts)]
-			#reals = theano.tensor.concatenate(real_outputs,axis=1)
-                        #imags = theano.tensor.concatenate(imag_outputs,axis=1)
-			#return theano.tensor.sqrt(reals**2+imags**2)
+        	        return theano.tensor.abs_(real_output)+theano.tensor.abs_(imag_output)
 		else:
                         real_output = self.real_layer.get_output_for(input)
                         return theano.tensor.abs_(real_output)

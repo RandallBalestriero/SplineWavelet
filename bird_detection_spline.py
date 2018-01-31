@@ -73,10 +73,10 @@ class conv_BULBUL:
                 layers        = [lasagne.layers.InputLayer(x_shape,x)]
                 layers.append(lasagne.layers.ReshapeLayer(layers[-1],(x_shape[0],1,x_shape[1])))
                 filter_size = int(N*2**J)
-		L1 = lasagne.layers.Conv1DLayer(layers[-1],num_filters=J*Q,filter_size=int(N*2**((J*Q+1.0)/Q)),nonlinearity=lambda x:x**2)
-                L2 = lasagne.layers.Conv1DLayer(layers[-1],num_filters=J*Q,filter_size=int(N*2**((J*Q+1.0)/Q)),nonlinearity=lambda x:x**2)
-		layers.append(lasagne.layers.ElemwiseMergeLayer([L1,L2],theano.tensor.add))
-                shape = lasagne.layers.get_output_shape(layers[-1])
+                L1 = lasagne.layers.Conv1DLayer(layers[-1],num_filters=J*Q,filter_size=int(N*2**((J*Q+1)/Q)),W=A.get_filters()[0],nonlinearity=theano.tensor.abs_)
+                L2 = lasagne.layers.Conv1DLayer(layers[-1],num_filters=J*Q,filter_size=int(N*2**((J*Q+1)/Q)),W=A.get_filters()[1],nonlinearity=theano.tensor.abs_)
+                layers.append(lasagne.layers.ElemwiseMergeLayer([L1,L2],theano.tensor.add))
+		shape = lasagne.layers.get_output_shape(layers[-1])
                 layers.append(lasagne.layers.ReshapeLayer(layers[-1],(shape[0],1,shape[1],shape[2])))
                 layers.append(lasagne.layers.Pool2DLayer(layers[-1],stride=(1,2**9),pool_size=(1,1024),mode='average_inc_pad'))
 		if log_:
@@ -107,8 +107,8 @@ class conv_BULBUL:
                 self.predict  = theano.function([x],output_test)
                 self.train    = theano.function([x,y,learning_rate],loss,updates=updates)
                 self.test     = theano.function([x,y],accu)
-                self.get_filters = theano.function([],layers[2].W)
-                self.get_repr    = theano.function([x],lasagne.layers.get_output(layers[3]))
+                self.get_filters = theano.function([],[L1.W,L2.W])
+                self.get_repr    = theano.function([x],lasagne.layers.get_output(layers[4]))
 
 
 
@@ -159,8 +159,8 @@ class GABOR_BULBUL:
                 layers.append(lasagne.layers.ReshapeLayer(layers[-1],(x_shape[0],1,x_shape[1])))
                 filter_size = int(N*2**J)
                 A = SplineFilter1D(layers[-1],N=int(N),J=int(J),Q=int(Q),S=int(S),type_='hermite',stride=1,pad='valid',nonlinearity=1,deterministic=0,initialization='gabor',renormalization=lambda x:x.norm(2),chirplet=0,complex_=1)
-                L1 = lasagne.layers.Conv1DLayer(layers[-1],num_filters=J*Q,filter_size=int(N*2**((J*Q+1)/Q)),W=A.get_filters()[0],nonlinearity=lambda x:x**2)
-                L2 = lasagne.layers.Conv1DLayer(layers[-1],num_filters=J*Q,filter_size=int(N*2**((J*Q+1)/Q)),W=A.get_filters()[1],nonlinearity=lambda x:x**2)
+                L1 = lasagne.layers.Conv1DLayer(layers[-1],num_filters=J*Q,filter_size=int(N*2**((J*Q+1)/Q)),W=A.get_filters()[0],nonlinearity=theano.tensor.abs_)
+                L2 = lasagne.layers.Conv1DLayer(layers[-1],num_filters=J*Q,filter_size=int(N*2**((J*Q+1)/Q)),W=A.get_filters()[1],nonlinearity=theano.tensor.abs_)
                 layers.append(lasagne.layers.ElemwiseMergeLayer([L1,L2],theano.tensor.add))
                 shape = lasagne.layers.get_output_shape(layers[-1])
                 layers.append(lasagne.layers.ReshapeLayer(layers[-1],(shape[0],1,shape[1],shape[2])))
@@ -192,7 +192,7 @@ class GABOR_BULBUL:
                 self.predict  = theano.function([x],output_test)
                 self.train    = theano.function([x,y,learning_rate],loss,updates=updates)
                 self.test     = theano.function([x,y],accu)
-                self.get_filters = theano.function([],layers[2].W)
+                self.get_filters = theano.function([],[L1.W,L2.W])
                 self.get_repr    = theano.function([x],lasagne.layers.get_output(layers[4]))
 
 

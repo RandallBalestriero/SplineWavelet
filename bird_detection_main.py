@@ -90,7 +90,7 @@ for i in xrange(n_data_):
 N,J,Q,S    = 16,5,16,16
 n_epochs   = 150
 
-for i in xrange(3):
+for i in xrange(5):
 	X_train,X_test,Y_train,Y_test 	= train_test_split(vstack(DATA),labels,test_size=0.33,stratify=labels,random_state=10+i)
 	X_train 		      	= X_train.astype('float32')
 	X_test 			      	= X_test.astype('float32')
@@ -108,7 +108,7 @@ for i in xrange(3):
 	        MODEL      = spline_BULBUL(x_shape=(batch_size_,shape(X_train)[1]),S=S,N=N,J=J,Q=Q,deterministic=0,initialization=init_,renormalization=lambda x:x.norm(2),chirplet=chirp,aug=aug_,complex_=complex_,log_=log_)
         elif(MODEL_ == 'GABOR'):
                 MODEL      = GABOR_BULBUL(x_shape=(batch_size_,shape(X_train)[1]),S=S,N=N,J=J,Q=Q,aug=aug_,log_=log_)
-	name = 'cagedbird32_'+MODEL_+str(i)+'_lr'+str(l_r_)+'_chirp'+str(chirp)+'_init'+init_+'_log'+str(log_)+'.pkl'
+	name = 'NORMEDGE_'+MODEL_+str(i)+'_lr'+str(l_r_)+'_chirp'+str(chirp)+'_init'+init_+'_log'+str(log_)+'.pkl'
 	print name
 	train_size =  shape(X_train)[0]
 	Y_train = array(Y_train)
