@@ -173,7 +173,7 @@ class SplineFilter1D(lasagne.layers.Layer):
                 self.initialization  = initialization
 		self.chirplet        = chirplet
 		self.complex         = complex_
-		self.n_filters=J*Q+1
+		self.n_filters=J*Q
 		if(complex_):
 	                self.filter_class  = theano_hermite_complex(S,deterministic=deterministic,renormalization=renormalization,initialization=initialization,chirplet=chirplet)
        		        real_filter_bank_,imag_filter_bank_,T= create_filter_banks_complex(self.filter_class,N,J,Q)
