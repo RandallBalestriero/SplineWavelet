@@ -38,7 +38,7 @@ for d in DATA:
 
 
 
-N,J,Q,S    = 16,6,8,16
+N,J,Q,S    = 16,3,8,16
 chirp      = 1
 n_epochs   = 300
 l_r_       = 0.1
@@ -46,20 +46,31 @@ log_       = 1
 complex_   = 1
 init_      ='random_apodized'
 
+def do_subs(x,N):
+	subs = []
+	xhat = fft(x)
+	n    = len(x)/(N/2+1)
+	print n
+	for i in xrange(N):
+		subs.append(real(ifft(xhat[i*(n/2):i*(n/2)+n]*hamming(n))))
+	return subs
+		
 
+N=8
 
 for i,j,k in zip(DATA_TRAIN,names,DATA_TEST):
-	MODEL      = SCALO(x_shape=(1,len(i)),S=S,N=N,J=J,Q=Q,initialization=init_,renormalization=lambda x:x.norm(2),chirplet=chirp,complex_=complex_,log_=log_)
-	error      = trainit(i.reshape((1,-1)),n_epochs,MODEL,l_r_)
-	FILTERS_TRAIN.append(MODEL.get_filters())
-        MODEL      = SCALO(x_shape=(1,len(k)),S=S,N=N,J=J,Q=Q,initialization=init_,renormalization=lambda x:x.norm(2),chirplet=chirp,complex_=complex_,log_=log_)
-        error      = trainit(k.reshape((1,-1)),n_epochs,MODEL,l_r_)
-        FILTERS_TEST.append(MODEL.get_filters())
+	si = do_subs(i,N)
+	FILTERS_TRAIN.append([])
+	for subs in si:
+		MODEL      = SCALO(x_shape=(1,len(subs)),S=S,N=N,J=J,Q=Q,initialization=init_,renormalization=lambda x:x.norm(2),chirplet=chirp,complex_=complex_,log_=log_)
+		error      = trainit(subs.reshape((1,-1)).astype('float32'),n_epochs,MODEL,l_r_)
+		FILTERS_TRAIN[-1].append(MODEL.get_filters())
 
 
-f=open('data_bird_saved.pkl','wb')
+
+f=open('octave_data_bird_saved.pkl','wb')
 cPickle.dump([FILTERS_TRAIN,FILTERS_TEST,DATA_TRAIN,DATA_TEST],f) 
-f.close()  
+f.close()
 
 
 
