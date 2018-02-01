@@ -15,7 +15,7 @@ def trainit(X_train,Y_train,X_test,Y_test,batch_size,n_epochs,MODEL,index_0,inde
         train_error    = []
         test_error     = []
         filters        = []
-        representation = [[],[]]
+        representation = []
 	accuracy           = []
         for n_epoch in xrange(n_epochs):
                 if(n_epoch<10 or n_epoch==(n_epochs-1)):
@@ -29,16 +29,21 @@ def trainit(X_train,Y_train,X_test,Y_test,batch_size,n_epochs,MODEL,index_0,inde
                         if(isinstance(MODEL,BULBUL)):
                                 x_batch = asarray([base.logfbank(x,samplerate=22050,winlen=0.046,winstep=0.010,nfilt=80,nfft=1024,lowfreq=10,highfreq=11000).T for x in x_batch]).astype('float32')
                         train_error.append(MODEL.train(x_batch,y_batch,l_r.astype('float32')))
-                        if(n_epoch==0 and batch<5):
-                                representation[0].append([MODEL.get_repr(x_batch),y_batch])
-                        if(n_epoch==(n_epochs-1) and batch<5):
-                                representation[1].append([MODEL.get_repr(x_batch),y_batch])
                         if batch%40 == 0:
                                 print 'batch n_',batch,'out of',n_batch,': ','training error=', train_error[-1]
 		auc,accu = testit(X_test,Y_test,batch_size,MODEL)
                 test_error.append(auc)
 		accuracy.append(accu)
                 print "epoch n_",n_epoch,' AUC= ', test_error[-1]
+	index_0 = find(Y_test==0)
+        index_1 = find(Y_test==1)
+	for i in xrange(5):
+                index_batch   = concatenate([index_0[i*batch_size/2:(i+1)*batch_size/2],index_1[i*batch_size/2:(i+1)*batch_size/2]])
+                x_batch = X_train[index_batch]
+                y_batch = Y_train[index_batch]
+		if(isinstance(MODEL,BULBUL)):
+                	x_batch = asarray([base.logfbank(x,samplerate=22050,winlen=0.046,winstep=0.010,nfilt=80,nfft=1024,lowfreq=10,highfreq=11000).T for x in x_batch]).astype('float32')
+		representation.append([MODEL.get_repr(x_batch),y_batch])
         f = open(name,'wb')
         cPickle.dump([train_error,test_error,accuracy,filters,representation],f)
         f.close()
