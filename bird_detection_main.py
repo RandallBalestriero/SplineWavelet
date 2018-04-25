@@ -82,12 +82,14 @@ MODEL_      = sys.argv[-3] # 'BULBUL CONV SPLINE GABOR'
 l_r_        = float32(sys.argv[-4])
 log_        = int(sys.argv[-5])
 batch_size_ = 10
-n_data_     = 7000
-names_wav   = names_wav[:n_data_]
-labels      = labels[:n_data_]
+n_data_     = int(sys.argv[-6])
+names_wav   = names_wav[:7000]
+labels      = labels[:7000]
 DATA = []
 aug_        = 0
-for i in xrange(n_data_):
+
+
+for i in xrange(7000):
 	data_files = sort(glob.glob('./wav/'+names_wav[i]+'.wav'))
         Fs,x 	   = read(data_files)
 	x          = x[0:len(x)-len(x)%2]
@@ -95,8 +97,11 @@ for i in xrange(n_data_):
 N,J,Q,S    = 16,5,16,16
 n_epochs   = 150
 
+seed(3)
+p = permutation(7000,n_data_)
+
 for i in xrange(5):
-	X_train,X_test,Y_train,Y_test 	= train_test_split(vstack(DATA),labels,test_size=0.33,stratify=labels,random_state=10+i)
+	X_train,X_test,Y_train,Y_test 	= train_test_split(vstack(DATA)[p],labels[p],test_size=0.33,stratify=labels[p],random_state=10+i)
 	X_train 		      	= X_train.astype('float32')
 	X_test 			      	= X_test.astype('float32')
 	Y_train 		      	= Y_train.astype('int32')
